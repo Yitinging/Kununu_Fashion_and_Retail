@@ -1,7 +1,10 @@
 import pandas as pd
 import streamlit as st
 import plotly.graph_objects as go
-
+import numpy as np
+import scipy.stats as stats
+import matplotlib.pyplot as plt
+from math import pi
 # Read the data
 df = pd.read_csv('kununu_competitors.csv')
 
@@ -14,16 +17,19 @@ columns_to_average = [
     'employer_salary_score', 'employer_image_score', 'employer_career_score'
 ]
 
+
+
 # Remove 'employer_' and '_score' from the columns in the DataFrame
 new_columns = {col: col.replace('employer_', '').replace('_score', '') for col in columns_to_average}
 df.rename(columns=new_columns, inplace=True)
 
+
 # Now columns_to_average uses the modified column names
-columns_to_average = list(new_columns.values())
+columns_to_average_new = list(new_columns.values())
 
 # Calculate the average scores for each company
-grouped_df = df.groupby('company_name_short')[columns_to_average].mean().round(1).reset_index()
-grouped_df['total_score'] = grouped_df[columns_to_average].mean(axis=1).round(1)
+grouped_df = df.groupby('company_name_short')[columns_to_average_new].mean().round(1).reset_index()
+grouped_df['total_score'] = grouped_df[columns_to_average_new].mean(axis=1).round(1)
 grouped_df.sort_values(by='total_score', ascending=False, inplace=True)
 
 # Sidebar to select view option
@@ -38,9 +44,9 @@ if view_option == "Compare":
     hugo_boss_data = grouped_df[grouped_df['company_name_short'] == 'Hugo Boss'].iloc[0]
 
     # Prepare data for radar chart
-    categories = columns_to_average
-    selected_company_values = company_data[columns_to_average].tolist()
-    hugo_boss_values = hugo_boss_data[columns_to_average].tolist()
+    categories = columns_to_average_new
+    selected_company_values = company_data[columns_to_average_new].tolist()
+    hugo_boss_values = hugo_boss_data[columns_to_average_new].tolist()
 
     # Add first value to close the radar chart
     selected_company_values += selected_company_values[:1]
@@ -74,27 +80,58 @@ if view_option == "Compare":
         title=f"Radar Chart: {selected_company} vs Hugo Boss"
     )
 
-    # Calculate score differences between the selected company and Hugo Boss
-    score_diff =  hugo_boss_data[columns_to_average] - company_data[columns_to_average] 
+# After the radar chart, let's add the new bar chart for significant differences
 
-    # Assign colors based on whether the difference is positive or negative
-    colors = ['blue' if diff > 0 else 'red' for diff in score_diff]
+# Function to perform statistical tests and return significance
+    def calculate_significance(df, company1, company2, columns):
+        significate = []
+        for score_col in columns:
+            company1_scores = df[df['company_name_short'] == company1][score_col]
+            company2_scores = df[df['company_name_short'] == company2][score_col]
+            
+            # Shapiro-Wilk Test for Normality
+            stat1, p1 = stats.shapiro(company1_scores)
+            stat2, p2 = stats.shapiro(company2_scores)
+            
+            alpha = 0.05
+            if p1 > alpha and p2 > alpha:
+                # Perform Independent T-Test
+                t_stat, t_p_value = stats.ttest_ind(company1_scores, company2_scores)
+                if t_p_value < alpha:
+                    significate.append(True)
+                else:
+                    significate.append(False)
+            else:
+                # Mann-Whitney U Test for non-normal distributions
+                u_stat, u_p_value = stats.mannwhitneyu(company1_scores, company2_scores)
+                if u_p_value < alpha:
+                    significate.append(True)
+                else:
+                    significate.append(False)
+        
+        return significate
 
-    # Create bar chart for score differences with conditional colors
+    # Generate significance information
+    significate = calculate_significance(df, selected_company, 'Hugo Boss', columns_to_average_new)
+
+    # Bar chart visualization with red for significant and gray for non-significant
+    bar_colors = ['red' if sig else 'gray' for sig in significate]
+    score_diff =  hugo_boss_data[columns_to_average_new] - company_data[columns_to_average_new] 
+
     bar_fig = go.Figure(go.Bar(
-        x=columns_to_average,
+        x=columns_to_average_new,
         y=score_diff,
-        name=f"{selected_company} vs Hugo Boss",
-        marker_color=colors  # Apply the conditional colors
+        marker=dict(color=bar_colors)
     ))
 
     bar_fig.update_layout(
-        title=f"Score Difference: {selected_company} vs Hugo Boss",
-        xaxis_title="Score Dimension",
-        yaxis_title="Score Difference",
-        yaxis=dict(range=[-1, 1]),
-        showlegend=False
+        title=f'Comparison of {selected_company} vs Hugo Boss (Red = Significant)',
+        xaxis_title='Score Categories',
+        yaxis_title='Mean Difference',
+        xaxis_tickangle=-45
     )
+
+    # Display the bar chart in Streamlit
 
     # Display radar chart and bar chart in Streamlit
     st.plotly_chart(fig)
@@ -102,7 +139,7 @@ if view_option == "Compare":
 
 elif view_option == "Ranking":
     # Dropdown to select ranking dimension
-    ranking_option = st.sidebar.selectbox("Select Ranking Dimension", columns_to_average + ['total_score'])
+    ranking_option = st.sidebar.selectbox("Select Ranking Dimension", columns_to_average_new + ['total_score'])
 
     # Sort companies by the selected ranking dimension
     sorted_df = grouped_df.sort_values(by=ranking_option, ascending=False)
@@ -133,7 +170,7 @@ elif view_option == "Ranking":
     st.plotly_chart(ranking_fig)
     
     # Calculate Hugo Boss's rank across all score dimensions
-    hugo_boss_rankings = grouped_df[columns_to_average + ['total_score']].rank(ascending=False)
+    hugo_boss_rankings = grouped_df[columns_to_average_new + ['total_score']].rank(ascending=False)
     hugo_boss_rankings = hugo_boss_rankings[grouped_df['company_name_short'] == 'Hugo Boss'].iloc[0]
 
     # Sort Hugo Boss's rankings from high to low

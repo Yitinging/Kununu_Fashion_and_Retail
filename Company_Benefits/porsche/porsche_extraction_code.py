@@ -7,7 +7,7 @@ import time
 
 # Initialize the browser
 driver = webdriver.Chrome()
-url = "https://jobs.porsche.com/index.php?ac=search_result&search_criterion_keyword%5B%5D=germany&search_criterion_channel%5B%5D=12&search_criterion_country%5B%5D=46#skip-to-search-result-heading"
+url = "https://jobs.porsche.com/index.php?ac=search_result&search_criterion_country%5B%5D=46&search_criterion_channel%5B%5D=12"
 driver.get(url)
 
 # Function to handle pop-ups or initial page load delays if necessary
@@ -52,6 +52,23 @@ def extract_job_details(job_index):
         )
         detailed_job_description = detailed_job_element.text.strip() if detailed_job_element else 'No details available'
 
+        # Check for the presence of "Exklusive Einblicke hinter die Kulissen" section
+        additional_info = ''
+        try:
+            # If the section is found, click on the plus icon and extract the additional information
+            section_element = driver.find_element(By.XPATH, "//span[contains(text(),'Exklusive Einblicke hinter die Kulissen')]")
+            toggle_icon = section_element.find_element(By.XPATH, "../../span[contains(@class, 'panel-toggle-icon')]")
+            toggle_icon.click()  # Click the plus icon to expand the section
+            time.sleep(2)  # Wait for the section to expand
+
+            # Extract the additional information
+            additional_info_element = WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, "div.panel-body"))
+            )
+            additional_info = additional_info_element.text.strip() if additional_info_element else 'No additional information available'
+        except:
+            additional_info = 'Section not found or could not extract additional information'
+
         # Return all extracted details as a dictionary
         return {
             'Job Title': job_title,
@@ -59,7 +76,8 @@ def extract_job_details(job_index):
             'Location': location,
             'Function': function,
             'Job Link': job_link,
-            'Detailed Job Description': detailed_job_description
+            'Detailed Job Description': detailed_job_description,
+            'Additional Information': additional_info
         }
     except Exception as e:
         print(f"Error extracting job details for job {job_index + 1}: {e}")
@@ -68,11 +86,15 @@ def extract_job_details(job_index):
 # Handle any initial page load pop-ups
 handle_popups()
 
+# Wait for user to manually set the number of job postings to 250 and then confirm to continue
+input("Please manually set the number of job postings to 250 on the webpage, then press Enter to continue...")
+
 # Initialize a list to hold all job details
 all_job_details = []
 
-# Get the number of job postings on the current page
+# Get the total number of job postings on the current page
 total_jobs = len(driver.find_elements(By.CSS_SELECTOR, "tbody.jb-dt-list-body tr"))
+print(f"Total job postings found: {total_jobs}")
 
 # Extract details for each job listing
 for index in range(total_jobs):
@@ -88,7 +110,7 @@ for index in range(total_jobs):
 all_jobs_df = pd.DataFrame(all_job_details)
 
 # Save the DataFrame to a CSV file
-all_jobs_df.to_csv('all_porsche_job_details.csv', index=False)
+all_jobs_df.to_csv('all_porsche_job_details_with_additional_info.csv', index=False)
 
 # Close the browser
 driver.quit()

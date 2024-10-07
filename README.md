@@ -18,24 +18,28 @@ Data extracted includes job titles, locations, functions, and additional insight
 
 4. Posting Frequency Analysis
 Analyzes the frequency and distribution of job postings over time.
-Used to identify hiring trends, peak posting times, and department-level demands.
+First split the job decription into paragraphs
+Second classificate the paragraphs with the core value in benifit
+Third with k-means cluster the Job Positions with core vlaue
+Fourth Visulization the result with Frequency Matrix
+Fifth Deep mining with the cluster and benefits
 
-5. Regression Analysis
+1. Regression Analysis
 Contains regression models applied to various datasets to understand the relationships between job postings, employee movement, and company performance.
 Focused on predicting attrition and identifying key variables impacting employee retention.
 
-6. Hugo_Boss_Attrition.csv
+1. Hugo_Boss_Attrition.csv
 Contains data related to employee attrition at Hugo Boss.
 surctria part focuses on specific criteria or attributes used in the analysis, such as department, function, and employee ratings.
 
-7. Hugo_Boss_Attrition_by_function.csv
+1. Hugo_Boss_Attrition_by_function.csv
 Similar to the Hugo_Boss_Attrition.csv, but grouped by specific functions (e.g., marketing, sales) to identify function-specific attrition trends.
 
-8. company_benefits.ipynb
+1. company_benefits.ipynb
 Analysis of company benefits across different organizations.
 Data is merged and classified to provide insights on what benefits employees value most.
 
-9. competitors_analysis.ipynb
+1. competitors_analysis.ipynb
 Comparative analysis of competitors using extracted data from various sources.
 Identifies strengths, weaknesses, and employee movement patterns between competing companies.
 

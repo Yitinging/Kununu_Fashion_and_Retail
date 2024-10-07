@@ -11,7 +11,6 @@ Used for demonstrating initial insights and analysis using basic data processing
 2. NLP with Kununu Data
 Implements Natural Language Processing (NLP) to analyze employee reviews from Kununu.
 Key tasks include text preprocessing, sentiment analysis, and extracting key topics from employee feedback.
-README.md file contains a detailed explanation of NLP workflows used in this section.
 
 3. Web Scrape Data from Job Postings
 Scripts and data files related to web scraping job postings from various company websites.
@@ -45,9 +44,11 @@ How to Use
 Set Up Environment:
 Clone the repository and install the required Python libraries listed in the requirements.txt file.
 Set up the necessary drivers (e.g., ChromeDriver) if using Selenium for web scraping.
+
 Run the Scripts:
 Navigate to the specific folder and run the .ipynb or .py files as needed.
 Each folder’s content is designed to be self-contained, and dependencies are specified within each script.
+
 Review the Outputs:
 CSV files and notebooks provide detailed outputs and visualizations.
 Modify the scripts as needed to extract data from new sources or update the analyses.
